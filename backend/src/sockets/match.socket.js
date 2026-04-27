@@ -21,4 +21,30 @@ module.exports = (io, socket) => {
       console.error(err);
     }
   });
+
+  socket.on('next_round', async ({ roomId }) => {
+    try {
+      const room = await Room.findOne({ roomId });
+      if (!room) return;
+
+      const Problem = require('../models/Problem');
+      const randomProblems = await Problem.aggregate([{ $sample: { size: 1 } }]);
+      
+      if (randomProblems && randomProblems.length > 0) {
+        room.problemId = randomProblems[0]._id;
+        room.startTime = new Date();
+        await room.save();
+
+        const populatedRoom = await Room.findOne({ roomId }).populate('problemId');
+        
+        io.to(roomId).emit('match_started', {
+          problem: populatedRoom.problemId,
+          startTime: populatedRoom.startTime,
+          isNextRound: true
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  });
 };

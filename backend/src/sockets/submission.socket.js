@@ -15,6 +15,10 @@ module.exports = (io, socket) => {
         result.response
       );
 
+      if (result.response.result === 'Accepted') {
+        io.to(payload.roomId).emit('player_won', { username: payload.username });
+      }
+
     } catch (err) {
       socket.emit('submission_error', {
         message: err.message

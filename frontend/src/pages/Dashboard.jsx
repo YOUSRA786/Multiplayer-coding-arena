@@ -11,6 +11,8 @@ const Dashboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [history, setHistory] = useState([]);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [useAi, setUseAi] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,12 +36,15 @@ const Dashboard = () => {
 
   const handleCreateRoom = async () => {
     try {
+      setIsCreating(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const { data } = await axios.post('http://localhost:5000/api/rooms', {}, config);
+      const { data } = await axios.post('http://localhost:5000/api/rooms', { useAi }, config);
       navigate(`/room/${data.roomId}`);
     } catch (error) {
       console.error(error);
       alert('Failed to create room');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -132,17 +137,35 @@ const Dashboard = () => {
 
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div 
-            onClick={handleCreateRoom}
-            className="group relative bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-blue-500/30 p-8 rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(59,130,246,0.3)]"
-          >
-            <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="group relative bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-blue-500/30 p-8 rounded-3xl overflow-hidden">
+            <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             <div className="relative z-10">
               <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
                 <Plus size={32} className="text-white" />
               </div>
               <h2 className="text-3xl font-bold text-white mb-2">Create Arena</h2>
-              <p className="text-blue-200">Start a new private match and invite your friends to compete.</p>
+              <p className="text-blue-200 mb-6">Start a new private match and invite your friends to compete.</p>
+              
+              <div className="flex items-center mb-6 space-x-3 bg-black/30 p-4 rounded-xl border border-white/10">
+                <input 
+                  type="checkbox" 
+                  id="useAiToggle" 
+                  checked={useAi} 
+                  onChange={(e) => setUseAi(e.target.checked)}
+                  className="w-5 h-5 text-purple-600 bg-gray-900 border-gray-700 rounded focus:ring-purple-600 focus:ring-2"
+                />
+                <label htmlFor="useAiToggle" className="text-sm font-medium text-purple-200 cursor-pointer flex-1">
+                  ✨ Generate new AI Problem (Takes ~5s)
+                </label>
+              </div>
+
+              <button 
+                onClick={handleCreateRoom}
+                disabled={isCreating}
+                className="w-full py-4 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? (useAi ? 'Generating AI Magic...' : 'Creating...') : 'Start Match'}
+              </button>
             </div>
           </div>
 

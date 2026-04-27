@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import Editor from '@monaco-editor/react';
 import { Play, Users, Trophy, MessageSquare, Code, List, Clock, Send, CheckCircle2, XCircle } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 const Room = () => {
   const { roomId } = useParams();
@@ -23,6 +24,7 @@ const Room = () => {
   const [messageInput, setMessageInput] = useState('');
   const [matchStartTime, setMatchStartTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState('30:00');
+  const [winner, setWinner] = useState(null);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -40,6 +42,11 @@ const Room = () => {
       setMatchStartTime(data.startTime);
       if (data.problem && data.problem.boilerplateCode) {
         setCode(data.problem.boilerplateCode[language]);
+      }
+      if (data.isNextRound) {
+        setWinner(null);
+        setOutput(null);
+        setActiveTab('problem');
       }
     });
 
@@ -66,8 +73,21 @@ const Room = () => {
       setChatMessages((prev) => [...prev, msg]);
     });
 
+    newSocket.on('player_won', (data) => {
+      if (!winner) { // Prevent multiple alerts if multiple accepted submissions happen
+        setWinner(data.username);
+        if (data.username === user.username) {
+          confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
+      }
+    });
+
     return () => newSocket.disconnect();
-  }, [roomId, user, language]);
+  }, [roomId, user, language, winner]);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -125,8 +145,31 @@ const Room = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[#0b0f19] text-gray-100 font-sans">
+      {/* Winner Overlay */}
+      {winner && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-gray-700 p-10 rounded-3xl shadow-[0_0_100px_rgba(59,130,246,0.3)] text-center animate-in zoom-in duration-300 transform scale-110">
+            <Trophy size={80} className="mx-auto text-yellow-400 mb-6 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+            <h2 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-4 tracking-tight">
+              {winner === user.username ? 'VICTORY!' : `${winner.toUpperCase()} WON!`}
+            </h2>
+            <p className="text-gray-300 text-xl font-medium">
+              {winner === user.username ? 'You solved all test cases perfectly.' : 'Better luck next time! Keep coding.'}
+            </p>
+            <button 
+              onClick={() => {
+                socket.emit('next_round', { roomId });
+              }} 
+              className="mt-10 px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/50"
+            >
+              Continue Playing
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Header */}
-      <header className="h-16 bg-[#111827] border-b border-gray-800 flex items-center justify-between px-6 shrink-0">
+      <header className="h-16 bg-[#111827] border-b border-gray-800 flex items-center justify-between px-6 shrink-0 z-10">
         <div className="flex items-center space-x-6">
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Arena #{roomId}</h1>
           <div className="flex items-center space-x-2 bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700">
