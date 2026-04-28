@@ -14,19 +14,31 @@ const getLeaderboard = async (req, res) => {
 const getStats = async (req, res) => {
   try {
     const userId = req.user._id;
+    const mongoose = require('mongoose');
     
-    // Total Matches Played (Distinct rooms where user submitted code)
-    const distinctRooms = await Submission.distinct('roomId', { userId });
-    const matchesPlayed = distinctRooms.length || 0;
+    const matchStats = await Submission.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$roomId",
+          bestResult: {
+            $max: {
+              $cond: [{ $eq: ["$result", "Accepted"] }, 1, 0]
+            }
+          },
+          lastSubmissionTime: { $first: "$createdAt" }
+        }
+      },
+      { $sort: { lastSubmissionTime: -1 } }
+    ]);
 
-    // Total Wins (Number of accepted submissions)
-    const wins = await Submission.countDocuments({ userId, result: 'Accepted' });
+    const matchesPlayed = matchStats.length;
+    const wins = matchStats.filter(m => m.bestResult === 1).length;
 
-    // Recent submissions to calculate win streak
-    const recentSubs = await Submission.find({ userId }).sort({ createdAt: -1 }).limit(10);
     let winStreak = 0;
-    for (const sub of recentSubs) {
-      if (sub.result === 'Accepted') winStreak++;
+    for (const match of matchStats) {
+      if (match.bestResult === 1) winStreak++;
       else break;
     }
 
@@ -44,7 +56,13 @@ const getStats = async (req, res) => {
 const getHistory = async (req, res) => {
   try {
     const userId = req.user._id;
-    const history = await Submission.find({ userId })
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    const history = await Submission.find({ 
+      userId,
+      createdAt: { $gte: threeDaysAgo }
+    })
       .populate('problemId', 'title difficulty')
       .populate('roomId', 'roomId')
       .sort({ createdAt: -1 })

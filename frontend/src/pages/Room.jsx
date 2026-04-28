@@ -156,14 +156,22 @@ const Room = () => {
             <p className="text-gray-300 text-xl font-medium">
               {winner === user.username ? 'You solved all test cases perfectly.' : 'Better luck next time! Keep coding.'}
             </p>
-            <button 
-              onClick={() => {
-                socket.emit('next_round', { roomId });
-              }} 
-              className="mt-10 px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/50"
-            >
-              Continue Playing
-            </button>
+            <div className="mt-10 flex flex-col items-center space-y-4">
+              <button 
+                onClick={() => {
+                  socket.emit('next_round', { roomId });
+                }} 
+                className="w-full px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/50"
+              >
+                Continue Playing
+              </button>
+              <button 
+                onClick={() => navigate('/')} 
+                className="px-6 py-2 text-gray-400 hover:text-white text-sm font-semibold transition-colors"
+              >
+                Stop Playing
+              </button>
+            </div>
           </div>
         </div>
       )}

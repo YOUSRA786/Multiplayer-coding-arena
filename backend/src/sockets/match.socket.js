@@ -28,10 +28,13 @@ module.exports = (io, socket) => {
       if (!room) return;
 
       const Problem = require('../models/Problem');
-      const randomProblems = await Problem.aggregate([{ $sample: { size: 1 } }]);
-      
-      if (randomProblems && randomProblems.length > 0) {
-        room.problemId = randomProblems[0]._id;
+      const { generateRandomProblem } = require('../services/aiProblemGenerator');
+
+      try {
+        const generatedData = await generateRandomProblem();
+        const problem = await Problem.create(generatedData);
+        
+        room.problemId = problem._id;
         room.startTime = new Date();
         await room.save();
 
@@ -42,6 +45,8 @@ module.exports = (io, socket) => {
           startTime: populatedRoom.startTime,
           isNextRound: true
         });
+      } catch (aiError) {
+        console.error("AI Generation failed for next round:", aiError);
       }
     } catch (err) {
       console.error(err);

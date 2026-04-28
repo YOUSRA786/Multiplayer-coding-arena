@@ -11,7 +11,6 @@ const Dashboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [history, setHistory] = useState([]);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [useAi, setUseAi] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
 
@@ -38,7 +37,7 @@ const Dashboard = () => {
     try {
       setIsCreating(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const { data } = await axios.post('http://localhost:5000/api/rooms', { useAi }, config);
+      const { data } = await axios.post('http://localhost:5000/api/rooms', { useAi: true }, config);
       navigate(`/room/${data.roomId}`);
     } catch (error) {
       console.error(error);
@@ -144,27 +143,14 @@ const Dashboard = () => {
                 <Plus size={32} className="text-white" />
               </div>
               <h2 className="text-3xl font-bold text-white mb-2">Create Arena</h2>
-              <p className="text-blue-200 mb-6">Start a new private match and invite your friends to compete.</p>
-              
-              <div className="flex items-center mb-6 space-x-3 bg-black/30 p-4 rounded-xl border border-white/10">
-                <input 
-                  type="checkbox" 
-                  id="useAiToggle" 
-                  checked={useAi} 
-                  onChange={(e) => setUseAi(e.target.checked)}
-                  className="w-5 h-5 text-purple-600 bg-gray-900 border-gray-700 rounded focus:ring-purple-600 focus:ring-2"
-                />
-                <label htmlFor="useAiToggle" className="text-sm font-medium text-purple-200 cursor-pointer flex-1">
-                  ✨ Generate new AI Problem (Takes ~5s)
-                </label>
-              </div>
+              <p className="text-blue-200 mb-6">Start a new private match and invite your friends to compete. A new AI challenge will be generated.</p>
 
               <button 
                 onClick={handleCreateRoom}
                 disabled={isCreating}
                 className="w-full py-4 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isCreating ? (useAi ? 'Generating AI Magic...' : 'Creating...') : 'Start Match'}
+                {isCreating ? 'Generating AI Challenge...' : 'Start Match'}
               </button>
             </div>
           </div>
