@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const userRoutes = require('./routes/userRoutes');
+const practiceRoutes = require('./routes/practiceRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -43,6 +44,7 @@ app.use(limiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/practice', practiceRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running');

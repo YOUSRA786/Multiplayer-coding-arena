@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { LogOut, Plus, Users, Trophy, Activity, Target, Flame, ChevronDown, User as UserIcon } from 'lucide-react';
+import { LogOut, Plus, Users, Trophy, Activity, Target, Flame, ChevronDown, User as UserIcon, BookOpen } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -86,7 +86,7 @@ const Dashboard = () => {
                 <p className="text-sm text-white font-medium">{user.username}</p>
                 <p className="text-xs text-gray-400">{user.email}</p>
               </div>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center">
+              <button onClick={() => navigate('/profile')} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center">
                 <UserIcon size={16} className="mr-2" /> Profile
               </button>
               <button 
@@ -135,15 +135,15 @@ const Dashboard = () => {
         </div>
 
         {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="group relative bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-blue-500/30 p-8 rounded-3xl overflow-hidden">
             <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             <div className="relative z-10">
               <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
                 <Plus size={32} className="text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white mb-2">Create Arena</h2>
-              <p className="text-blue-200 mb-6">Start a new private match and invite your friends to compete. A new AI challenge will be generated.</p>
+              <h2 className="text-2xl font-bold text-white mb-2">Create Arena</h2>
+              <p className="text-blue-200 mb-6 text-sm">Start a new private match. A fresh AI challenge will be generated.</p>
 
               <button 
                 onClick={handleCreateRoom}
@@ -159,26 +159,44 @@ const Dashboard = () => {
             <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6 border border-green-500/30">
               <Users size={32} className="text-green-400" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Join Arena</h2>
-            <p className="text-gray-400 mb-6">Enter a room code to jump into an active battle.</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Join Arena</h2>
+            <p className="text-gray-400 mb-6 text-sm">Enter a room code to jump into an active battle.</p>
             <form onSubmit={handleJoinRoom} className="flex space-x-3">
               <input
                 type="text"
                 placeholder="Enter Room Code"
                 required
-                className="flex-1 px-5 py-4 text-white bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all uppercase placeholder:normal-case"
+                className="flex-1 px-4 py-3 text-white bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all uppercase placeholder:normal-case"
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
               />
               <button
                 type="submit"
-                className="px-8 py-4 font-bold text-white bg-green-600 rounded-xl hover:bg-green-500 transition-colors shadow-lg shadow-green-900/50"
+                className="px-6 py-3 font-bold text-white bg-green-600 rounded-xl hover:bg-green-500 transition-colors shadow-lg shadow-green-900/50"
               >
                 Join
               </button>
             </form>
           </div>
+
+          <div
+            onClick={() => navigate('/practice')}
+            className="group relative bg-gradient-to-br from-purple-900/40 to-pink-900/20 border border-purple-500/30 p-8 rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(168,85,247,0.2)]"
+          >
+            <div className="absolute inset-0 bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+            <div className="relative z-10">
+              <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30">
+                <BookOpen size={32} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Practice Mode</h2>
+              <p className="text-purple-200 text-sm mb-6">Solve AI-generated problems by topic. Track your progress like LeetCode!</p>
+              <div className="flex items-center text-purple-400 text-sm font-semibold group-hover:gap-2 transition-all">
+                <span>Browse Topics →</span>
+              </div>
+            </div>
+          </div>
         </div>
+
 
         {/* History & Leaderboard */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
