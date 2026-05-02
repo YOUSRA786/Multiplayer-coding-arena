@@ -1,4 +1,3 @@
-const OpenAI = require('openai');
 const Problem = require('../models/Problem');
 const PracticeLog = require('../models/PracticeLog');
 const mongoose = require('mongoose');
@@ -47,88 +46,116 @@ const generatePracticeProblem = async (req, res) => {
   const { topic } = req.body;
   if (!topic) return res.status(400).json({ message: 'Topic is required' });
 
-  if (!process.env.OPENAI_API_KEY) {
-    return res.status(500).json({ message: 'OpenAI API key not configured' });
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ message: 'GEMINI_API_KEY not configured in .env' });
   }
 
   const topicObj = DSA_TOPICS.find(t => t.id === topic);
   const topicLabel = topicObj ? topicObj.label : topic;
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-flash-latest',
+      generationConfig: { responseMimeType: 'application/json' }
+    });
 
     const prompt = `
 Generate a unique coding interview problem specifically about the topic: "${topicLabel}".
 It should be of a random difficulty (easy, medium, or hard).
 
-Return ONLY a strictly valid JSON object matching this exact schema:
+Return a JSON object with this schema:
 {
-  "title": "String - A creative title for the problem",
-  "description": "String - The full problem description in Markdown format",
+  "title": "String",
+  "description": "String",
   "difficulty": "String - 'easy', 'medium', or 'hard'",
   "topic": "${topic}",
   "examples": [
     {
-      "input": "String - Example input variables",
-      "output": "String - Example output",
-      "explanation": "String - Brief explanation"
+      "input": "String",
+      "output": "String",
+      "explanation": "String"
     }
   ],
-  "constraints": ["String - Constraint 1", "String - Constraint 2"],
+  "constraints": ["String"],
   "boilerplateCode": {
-    "python": "String - Python 3 boilerplate reading from stdin, printing to stdout",
-    "cpp": "String - C++ boilerplate using cin/cout with int main()",
-    "java": "String - Java boilerplate, public class Main, using System.in/out"
+    "python": "String",
+    "cpp": "String",
+    "java": "String"
   },
   "testCases": [
     {
-      "input": "String - Exact stdin input matching your boilerplate format",
-      "expectedOutput": "String - Exact stdout output, no extra whitespace"
+      "input": "String",
+      "expectedOutput": "String"
     }
   ]
 }
 
 Rules:
 1. Exactly 2 examples, exactly 5 testCases.
-2. testCases input/output MUST exactly match boilerplate stdin/stdout format.
-3. Return raw JSON only — no markdown, no code blocks, no trailing commas.
+2. DO NOT include the solution logic in the boilerplateCode. Provide only the input reading logic and placeholders (e.g., // Write your logic here).
+3. For Java, use public class Main.
 `;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.85,
-    });
-
-    let raw = response.choices[0].message.content.trim();
+    const result = await model.generateContent(prompt);
+    let raw = result.response.text().trim();
     if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim();
     else if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim();
 
     const parsed = JSON.parse(raw);
-    parsed.topic = topic; // ensure topic field is set
+    parsed.topic = topic;
 
     const problem = await Problem.create(parsed);
     res.json(problem);
   } catch (error) {
-    console.error('Practice AI error:', error);
-    res.status(500).json({ message: 'Failed to generate practice problem' });
+    console.error('Practice Gemini error:', error?.message || error);
+    
+    // Try DB fallback for the topic
+    try {
+      const fallbackProblem = await Problem.findOne({ topic: topic });
+      if (fallbackProblem) {
+        console.log('Using DB fallback for topic:', topic);
+        return res.json(fallbackProblem);
+      }
+    } catch (fallbackErr) {
+      console.error('Topic fallback failed:', fallbackErr.message);
+    }
+
+    const errMsg = error?.message || 'Unknown error';
+    res.status(500).json({ message: `AI generation failed: ${errMsg}` });
   }
 };
 
 // POST /api/practice/complete  — log a completed problem
 const completeProblem = async (req, res) => {
   try {
-    const { problemId, topic } = req.body;
+    const { problemSlug, topic, title } = req.body;
     const userId = req.user._id;
+
+    if (!problemSlug || !topic) {
+      return res.status(400).json({ message: 'problemSlug and topic are required' });
+    }
 
     // Upsert: ignore if already completed
     await PracticeLog.findOneAndUpdate(
-      { userId, problemId },
-      { userId, problemId, topic, completedAt: new Date() },
+      { userId, problemSlug },
+      { userId, problemSlug, topic, title, completedAt: new Date() },
       { upsert: true, new: true }
     );
 
     res.json({ message: 'Problem marked as complete!' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/practice/done — returns all completed problem slugs for the user
+const getDoneIds = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const logs = await PracticeLog.find({ userId }).select('problemSlug topic');
+    res.json(logs);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -151,4 +178,4 @@ const getProgress = async (req, res) => {
   }
 };
 
-module.exports = { getTopics, generatePracticeProblem, completeProblem, getProgress };
+module.exports = { getTopics, generatePracticeProblem, completeProblem, getProgress, getDoneIds };

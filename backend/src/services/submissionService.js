@@ -3,9 +3,8 @@ const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
 const Problem = require('../models/Problem');
 const Room = require('../models/Room');
-
-// Simple in-memory scores for the prototype
-const roomScores = {};
+const User = require('../models/User');
+const gameService = require('./gameService');
 
 const handleSubmission = async ({
   roomId,
@@ -15,30 +14,42 @@ const handleSubmission = async ({
   code,
   language
 }) => {
-  if (!problemId || !mongoose.Types.ObjectId.isValid(problemId)) {
-    throw new Error('Invalid or missing problem ID. Please start the match again.');
+  const gameState = await gameService.getGameState(roomId);
+  if (!gameState || gameState.status !== 'in_round') {
+    throw new Error('Round is not active or match has ended.');
+  }
+
+  // Prevent duplicate solves in the same round
+  if (gameState.solvedUsers.some(u => u.userId === userId)) {
+    throw new Error('You have already solved this problem in this round.');
   }
 
   const problem = await Problem.findById(problemId);
-  if (!problem) {
-    throw new Error('Problem not found.');
-  }
+  if (!problem) throw new Error('Problem not found.');
 
   const room = await Room.findOne({ roomId });
-  if (!room) {
-    throw new Error('Room not found.');
-  }
+  if (!room) throw new Error('Room not found.');
 
   // Execute Code
+  console.log(`Executing code for user ${userId} in room ${roomId}...`);
+  
+  // LeetCode style: Join user code with hidden test harness if available
+  let codeToExecute = code;
+  if (problem.testHarness && problem.testHarness[language]) {
+    codeToExecute = code + "\n\n" + problem.testHarness[language];
+  }
+
   let data;
   try {
     const res = await axios.post("http://localhost:5001/execute", {
-      code,
+      code: codeToExecute,
       language,
       testCases: problem.testCases
     });
     data = res.data;
+    console.log('Execution successful:', data.results?.length, 'test cases run');
   } catch (error) {
+    console.error('Code execution failed:', error.message);
     throw new Error(error.response?.data?.message || 'Code execution service failed');
   }
 
@@ -54,7 +65,7 @@ const handleSubmission = async ({
     details: resultsArray
   };
 
-  // Save Submission using the MongoDB _id for the room
+  // Save Submission
   await Submission.create({
     userId,
     roomId: room._id,
@@ -66,24 +77,30 @@ const handleSubmission = async ({
     totalTestCases: totalCount
   });
 
-  // Calculate Leaderboard
-  if (!roomScores[roomId]) {
-    roomScores[roomId] = {};
-  }
-  
+  let solveResult = null;
   if (result === 'Accepted') {
-    // Award 100 points per accepted submission (could be logic based on time)
-    roomScores[roomId][username] = (roomScores[roomId][username] || 0) + 100;
+    // Handle solve in game engine
+    solveResult = await gameService.handleSolve(roomId, userId);
+    
+    // Increment User Rating (+10 for accepted)
+    try {
+      await User.findByIdAndUpdate(userId, { $inc: { rating: 10 } });
+    } catch (e) {
+      console.error('Rating update failed:', e);
+    }
   }
 
-  const leaderboard = Object.keys(roomScores[roomId]).map(user => ({
-    username: user,
-    score: roomScores[roomId][user]
-  })).sort((a, b) => b.score - a.score);
+  // Fetch updated game state for leaderboard
+  const updatedState = await gameService.getGameState(roomId);
+  const leaderboard = Object.entries(updatedState?.scores || {}).map(([uid, score]) => {
+    const p = updatedState.players.find(p => p.userId === uid);
+    return { username: p?.username || 'Unknown', score };
+  }).sort((a, b) => b.score - a.score);
 
   return {
     leaderboard,
-    response: formattedResponse
+    response: formattedResponse,
+    solveResult // contains points, allSolved, etc.
   };
 };
 

@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Submission = require('../models/Submission');
 const Room = require('../models/Room');
+const Problem = require('../models/Problem');
 
 const getLeaderboard = async (req, res) => {
   try {
@@ -56,19 +57,43 @@ const getStats = async (req, res) => {
 const getHistory = async (req, res) => {
   try {
     const userId = req.user._id;
+    const mongoose = require('mongoose');
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-    const history = await Submission.find({ 
-      userId,
-      createdAt: { $gte: threeDaysAgo }
-    })
-      .populate('problemId', 'title difficulty')
-      .populate('roomId', 'roomId')
-      .sort({ createdAt: -1 })
-      .limit(10);
+    const history = await Submission.aggregate([
+      { 
+        $match: { 
+          userId: new mongoose.Types.ObjectId(userId),
+          createdAt: { $gte: threeDaysAgo }
+        } 
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$roomId",
+          bestResult: { $max: { $cond: [{ $eq: ["$result", "Accepted"] }, "Accepted", "Wrong Answer"] } },
+          lastProblemId: { $first: "$problemId" },
+          lastCreatedAt: { $first: "$createdAt" }
+        }
+      },
+      { $sort: { lastCreatedAt: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // Populate manually since aggregate doesn't support easy population of nested docs
+    const populatedHistory = await Promise.all(history.map(async (item) => {
+      const room = await Room.findById(item._id).select('roomId');
+      const problem = await Problem.findById(item.lastProblemId).select('title difficulty');
+      return {
+        roomId: room,
+        problemId: problem,
+        result: item.bestResult,
+        createdAt: item.lastCreatedAt
+      };
+    }));
       
-    res.json(history);
+    res.json(populatedHistory);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

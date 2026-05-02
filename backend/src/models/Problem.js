@@ -15,6 +15,11 @@ const problemSchema = new mongoose.Schema({
     cpp: { type: String },
     java: { type: String }
   },
+  testHarness: {
+    python: { type: String },
+    cpp: { type: String },
+    java: { type: String }
+  },
   testCases: [{
     input: { type: String, required: true },
     expectedOutput: { type: String, required: true },

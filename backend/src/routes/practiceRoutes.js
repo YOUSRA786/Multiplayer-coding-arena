@@ -1,10 +1,11 @@
 const express = require('express');
-const { getTopics, generatePracticeProblem, completeProblem, getProgress } = require('../controllers/practiceController');
+const { getTopics, generatePracticeProblem, completeProblem, getProgress, getDoneIds } = require('../controllers/practiceController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 router.get('/topics', protect, getTopics);
+router.get('/done', protect, getDoneIds);
 router.post('/generate', protect, generatePracticeProblem);
 router.post('/complete', protect, completeProblem);
 router.get('/progress', protect, getProgress);

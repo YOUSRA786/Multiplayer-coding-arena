@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -32,6 +32,13 @@ const PracticeProblem = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
+  const resultsRef = useRef(null);
+
+  useEffect(() => {
+    if (output && resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [output]);
 
   if (!problem) {
     return (
@@ -88,7 +95,11 @@ const PracticeProblem = () => {
     setIsMarkingDone(true);
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      await axios.post('http://localhost:5000/api/practice/complete', { problemId: problem._id, topic: topic.id }, config);
+      await axios.post('http://localhost:5000/api/practice/complete', { 
+        problemSlug: problem._id, 
+        topic: topic.id,
+        title: problem.title
+      }, config);
       setIsCompleted(true);
     } catch (err) {
       console.error(err);
@@ -156,7 +167,7 @@ const PracticeProblem = () => {
             )}
 
             {problem.constraints?.length > 0 && (
-              <div className="bg-[#1f2937]/50 border border-gray-800 rounded-xl p-4">
+              <div className="bg-[#1f2937]/50 border border-gray-800 rounded-xl p-4 mb-8">
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Constraints</h3>
                 <ul className="list-disc pl-4 text-gray-400 font-mono text-xs space-y-1">
                   {problem.constraints.map((c, i) => <li key={i}>{c}</li>)}
@@ -166,64 +177,66 @@ const PracticeProblem = () => {
           </div>
 
           {/* Results */}
-          {output && (
-            <div className="p-4 border-t border-gray-800">
-              <div className={`p-4 rounded-xl border mb-3 flex items-center justify-between ${output.result === 'Accepted' ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                <div className="flex items-center space-x-2">
-                  {output.result === 'Accepted' ? <CheckCircle2 className="text-green-500" size={20} /> : <XCircle className="text-red-500" size={20} />}
-                  <span className={`font-bold ${output.result === 'Accepted' ? 'text-green-400' : 'text-red-400'}`}>{output.result}</span>
-                </div>
-                <span className="text-gray-400 font-mono text-sm">{output.passedCount}/{output.totalCount} Passed</span>
-              </div>
-
-              {output.result === 'Accepted' && (
-                <button
-                  onClick={handleMarkDone}
-                  disabled={isCompleted || isMarkingDone}
-                  className={`w-full py-3 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all
-                    ${isCompleted
-                      ? 'bg-green-900/40 text-green-400 border border-green-700 cursor-default'
-                      : 'bg-purple-600 hover:bg-purple-500 text-white hover:scale-[1.02]'
-                    }`}
-                >
-                  {isMarkingDone ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : isCompleted ? (
-                    <><CheckCircle2 size={16} /><span>Marked as Done! ✨</span></>
-                  ) : (
-                    <><Trophy size={16} /><span>Mark as Done</span></>
-                  )}
-                </button>
-              )}
-
-              <div className="space-y-2 mt-3">
-                {output.details?.map((d, i) => (
-                  <div key={i} className={`p-3 rounded-lg border text-xs font-mono ${d.passed ? 'bg-gray-800/50 border-gray-700' : 'bg-red-900/20 border-red-900/50'}`}>
-                    <div className="flex justify-between text-gray-400 mb-1">
-                      <span>Test {i + 1}</span>
-                      <span className={d.passed ? 'text-green-500' : 'text-red-500'}>{d.passed ? 'Passed' : 'Failed'}</span>
-                    </div>
-                    {!d.passed && (
-                      <div className="space-y-0.5">
-                        {d.input && <p><span className="text-gray-500">Input:</span> {d.input}</p>}
-                        {d.expectedOutput && <p><span className="text-green-500/70">Expected:</span> {d.expectedOutput}</p>}
-                        {d.actualOutput && <p><span className="text-red-500/70">Got:</span> {d.actualOutput}</p>}
-                        {d.error && <p className="text-yellow-400 mt-1">{d.error}</p>}
-                      </div>
-                    )}
+          <div ref={resultsRef}>
+            {output && (
+              <div className="p-4 border-t border-gray-800">
+                <div className={`p-4 rounded-xl border mb-3 flex items-center justify-between ${output.result === 'Accepted' ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="flex items-center space-x-2">
+                    {output.result === 'Accepted' ? <CheckCircle2 className="text-green-500" size={20} /> : <XCircle className="text-red-500" size={20} />}
+                    <span className={`font-bold ${output.result === 'Accepted' ? 'text-green-400' : 'text-red-400'}`}>{output.result}</span>
                   </div>
-                ))}
-              </div>
+                  <span className="text-gray-400 font-mono text-sm">{output.passedCount}/{output.totalCount} Passed</span>
+                </div>
 
-              <button
-                onClick={() => navigate('/practice')}
-                className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white flex items-center justify-center space-x-2 hover:bg-gray-800 transition-colors"
-              >
-                <RefreshCw size={14} />
-                <span>Try Another Topic</span>
-              </button>
-            </div>
-          )}
+                {output.result === 'Accepted' && (
+                  <button
+                    onClick={handleMarkDone}
+                    disabled={isCompleted || isMarkingDone}
+                    className={`w-full py-3 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all
+                      ${isCompleted
+                        ? 'bg-green-900/40 text-green-400 border border-green-700 cursor-default'
+                        : 'bg-purple-600 hover:bg-purple-500 text-white hover:scale-[1.02]'
+                      }`}
+                  >
+                    {isMarkingDone ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : isCompleted ? (
+                      <><CheckCircle2 size={16} /><span>Marked as Done! ✨</span></>
+                    ) : (
+                      <><Trophy size={16} /><span>Mark as Done</span></>
+                    )}
+                  </button>
+                )}
+
+                <div className="space-y-2 mt-3">
+                  {output.details?.map((d, i) => (
+                    <div key={i} className={`p-3 rounded-lg border text-xs font-mono ${d.passed ? 'bg-gray-800/50 border-gray-700' : 'bg-red-900/20 border-red-900/50'}`}>
+                      <div className="flex justify-between text-gray-400 mb-1">
+                        <span>Test {i + 1}</span>
+                        <span className={d.passed ? 'text-green-500' : 'text-red-500'}>{d.passed ? 'Passed' : 'Failed'}</span>
+                      </div>
+                      {!d.passed && (
+                        <div className="space-y-0.5">
+                          {d.input && <p><span className="text-gray-500">Input:</span> {d.input}</p>}
+                          {d.expectedOutput && <p><span className="text-green-500/70">Expected:</span> {d.expectedOutput}</p>}
+                          {d.actualOutput && <p><span className="text-red-500/70">Got:</span> {d.actualOutput}</p>}
+                          {d.error && <p className="text-yellow-400 mt-1">{d.error}</p>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => navigate('/practice')}
+                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white flex items-center justify-center space-x-2 hover:bg-gray-800 transition-colors"
+                >
+                  <RefreshCw size={14} />
+                  <span>Try Another Topic</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Editor */}
