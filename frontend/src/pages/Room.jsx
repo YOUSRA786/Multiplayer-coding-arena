@@ -147,13 +147,13 @@ const Room = () => {
       <div className="scanline"></div>
 
       {/* Header */}
-      <header className="h-24 px-10 flex items-center justify-between z-50 bg-[#0b0e14]/80 backdrop-blur-md border-b border-white/5 relative shrink-0">
+      <header className="h-20 px-10 flex items-center justify-between z-50 bg-[#0b0e14]/80 backdrop-blur-md border-b border-white/5 relative shrink-0">
         <div className="flex flex-col">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)]">
-              <Sword size={24} className="text-white transform -rotate-45" />
+            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+              <Sword size={20} className="text-white transform -rotate-45" />
             </div>
-            <h1 className="text-4xl font-black italic tracking-tighter uppercase">
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase">
               CODE<span className="text-pink-500">BRAWL</span>
             </h1>
           </div>
@@ -164,13 +164,26 @@ const Room = () => {
         </div>
 
         <div className="flex items-center space-x-6">
-          <div className="brawl-card px-6 py-3 flex items-center space-x-6 glow-cyan">
-            <div className="text-right">
-              <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mb-1">Lobby Encryption Code</p>
-              <p className="text-2xl font-black font-mono text-cyan-400 text-glow-cyan tracking-widest">{roomId}</p>
+          {/* Integrated Timer */}
+          {(gameState === 'in_round' || gameState === 'game_end') && (
+            <div className="hidden md:flex flex-col items-center px-8 border-x border-white/5 h-full justify-center">
+              <p className="text-[7px] font-bold text-gray-500 uppercase tracking-widest mb-1 italic">Arena Clock</p>
+              <div className="flex items-center space-x-2">
+                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${timeLeft.startsWith('00:') ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-pink-500 shadow-[0_0_8px_#ec4899]'}`}></div>
+                <p className={`text-3xl font-black font-mono tracking-tighter italic ${timeLeft.startsWith('00:') ? 'text-red-500 text-glow-red' : 'text-pink-500 text-glow-pink'}`}>
+                  {timeLeft}
+                </p>
+              </div>
             </div>
-            <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
-              <Share2 size={20} className="text-gray-400" />
+          )}
+
+          <div className="brawl-card px-5 py-2 flex items-center space-x-4 glow-cyan">
+            <div className="text-right">
+              <p className="text-[7px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Lobby Encryption Code</p>
+              <p className="text-xl font-black font-mono text-cyan-400 text-glow-cyan tracking-widest">{roomId}</p>
+            </div>
+            <button className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+              <Share2 size={16} className="text-gray-400" />
             </button>
           </div>
         </div>
@@ -290,13 +303,6 @@ const Room = () => {
         {/* In-Game State */}
         {gameState === 'in_round' && problem && (
           <div className="flex-1 flex flex-col relative">
-            {/* Round Timer Overlay */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-              <div className="brawl-card px-10 py-6 text-center border-b-4 border-pink-500 glow-pink">
-                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mb-1">Brawl Remaining</p>
-                <p className="text-5xl font-black font-mono text-pink-500 text-glow-pink tracking-tight italic">{timeLeft}</p>
-              </div>
-            </div>
 
             <div className="flex-1 flex space-x-8 pt-20">
               {/* Left: Problem Details */}
@@ -482,39 +488,40 @@ const Room = () => {
 
         {/* Round/Game Result State */}
         {(gameState === 'round_end' || gameState === 'game_end') && gameResult && (
-          <div className="fixed inset-0 z-50 bg-[#0b0e14]/90 backdrop-blur-3xl flex items-center justify-center p-10 animate-in fade-in duration-700">
-             <div className="max-w-4xl w-full text-center">
-                <div className="relative inline-block mb-12">
-                   <div className="w-64 h-64 bg-gradient-to-br from-cyan-500 to-pink-500 rounded-[3rem] flex items-center justify-center text-[120px] shadow-[0_0_100px_rgba(6,182,212,0.5)] border-2 border-white/30 relative overflow-hidden group">
-                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                     <span className="relative z-10 drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
-                       {gameResult.winnerName || gameResult.solvedUsers?.[0] ? (
-                         participants.find(p => p.userId === (gameResult.winnerId || gameResult.solvedUsers?.[0]?.userId) || p.username === (gameResult.winnerName || gameResult.solvedUsers?.[0]?.username))?.avatarEmoji || '🏆'
-                       ) : (
-                         '🤝'
-                       )}
+          <div className="fixed inset-0 z-50 bg-[#0b0e14]/95 backdrop-blur-3xl overflow-y-auto animate-in fade-in duration-700">
+             <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 md:p-12 lg:p-20">
+                <div className="max-w-4xl w-full text-center py-10">
+                   <div className="relative inline-block mb-8 scale-75 md:scale-100 transition-transform">
+                      <div className="w-48 h-48 md:w-64 md:h-64 bg-gradient-to-br from-cyan-500 to-pink-500 rounded-[3rem] flex items-center justify-center text-[80px] md:text-[120px] shadow-[0_0_100px_rgba(6,182,212,0.4)] border-2 border-white/30 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                        <span className="relative z-10 drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
+                          {gameResult.winnerName || gameResult.solvedUsers?.[0] ? (
+                            participants.find(p => p.userId === (gameResult.winnerId || gameResult.solvedUsers?.[0]?.userId) || p.username === (gameResult.winnerName || gameResult.solvedUsers?.[0]?.username))?.avatarEmoji || '🏆'
+                          ) : (
+                            '🤝'
+                          )}
+                        </span>
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 md:-bottom-4 md:-right-4 w-16 h-16 md:w-20 md:h-20 bg-yellow-500 rounded-full flex items-center justify-center border-4 md:border-8 border-[#0b0e14] shadow-2xl z-20">
+                        <Trophy size={24} className="text-black md:w-8 md:h-8" />
+                      </div>
+                      <div className="absolute -inset-6 bg-gradient-to-tr from-cyan-500 via-transparent to-pink-500 rounded-[3.5rem] opacity-20 blur-2xl animate-pulse"></div>
+                   </div>
+
+                   <div className="px-6 py-1.5 md:px-8 md:py-2 bg-white/5 border border-white/10 rounded-full inline-flex items-center space-x-3 mb-6 backdrop-blur-md">
+                     <div className={`w-2 h-2 rounded-full animate-ping ${gameResult.solvedUsers?.length > 0 ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                     <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] ${gameResult.solvedUsers?.length > 0 ? 'text-green-400' : 'text-yellow-400'}`}>
+                       {gameState === 'game_end' ? 'CHAMPION DECLARED' : (gameResult.solvedUsers?.length > 0 ? 'ROUND SECURED' : 'PROTOCOL STALEMATE')}
                      </span>
                    </div>
-                   <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center border-8 border-[#0b0e14] shadow-2xl z-20">
-                     <Trophy size={32} className="text-black" />
-                   </div>
-                   <div className="absolute -inset-6 bg-gradient-to-tr from-cyan-500 via-transparent to-pink-500 rounded-[3.5rem] opacity-20 blur-2xl animate-pulse"></div>
-                </div>
 
-                <div className="px-8 py-2 bg-white/5 border border-white/10 rounded-full inline-flex items-center space-x-3 mb-6 backdrop-blur-md">
-                  <div className={`w-2 h-2 rounded-full animate-ping ${gameResult.solvedUsers?.length > 0 ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                  <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${gameResult.solvedUsers?.length > 0 ? 'text-green-400' : 'text-yellow-400'}`}>
-                    {gameState === 'game_end' ? 'CHAMPION DECLARED' : (gameResult.solvedUsers?.length > 0 ? 'ROUND SECURED' : 'PROTOCOL STALEMATE')}
-                  </span>
-                </div>
+                   <h2 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase text-white mb-12 md:mb-20 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                     {gameResult.winnerName || 
+                      participants.find(p => p.userId === gameResult.solvedUsers?.[0]?.userId)?.username || 
+                      'ROUND DRAW'}
+                   </h2>
 
-                <h2 className="text-8xl font-black italic tracking-tighter uppercase text-white mb-20 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                  {gameResult.winnerName || 
-                   participants.find(p => p.userId === gameResult.solvedUsers?.[0]?.userId)?.username || 
-                   'ROUND DRAW'}
-                </h2>
-
-                <div className="grid grid-cols-3 gap-8">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                   {(gameResult.rankedPlayers || gameResult.finalRankings || leaderboard)?.slice(0, 3).map((p, i) => (
                     <div key={i} className="brawl-card p-8 flex flex-col items-center relative overflow-hidden group hover:transform hover:-translate-y-2 transition-all border-white/10 bg-white/[0.02]">
                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
@@ -549,9 +556,10 @@ const Room = () => {
                       </button>
                     )
                   )}
-                </div>
-             </div>
-          </div>
+                 </div>
+              </div>
+           </div>
+        </div>
         )}
       </main>
     </div>
