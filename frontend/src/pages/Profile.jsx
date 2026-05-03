@@ -1,161 +1,189 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import {
-  ArrowLeft, Trophy, Activity, Target, Flame, BookOpen,
-  CheckCircle2, User as UserIcon
+import { 
+  ArrowLeft, Camera, Save, User as UserIcon, Mail, 
+  Trophy, Activity, Shield, Zap, Sword, Target, Terminal, Loader2
 } from 'lucide-react';
 
-const TOPIC_LABELS = {
-  'arrays': 'Arrays',
-  'strings': 'Strings',
-  'linked-lists': 'Linked Lists',
-  'stacks-queues': 'Stacks & Queues',
-  'trees': 'Trees',
-  'graphs': 'Graphs',
-  'dynamic-programming': 'Dynamic Programming',
-  'sorting': 'Sorting & Searching',
-  'recursion': 'Recursion',
-  'hashing': 'Hashing',
-  'greedy': 'Greedy',
-  'bit-manipulation': 'Bit Manipulation',
-};
+const EMOJI_LIST = [
+  '👤', '👨‍💻', '👩‍💻', '🦾', '🥷', '🦸', '🦸‍♀️', '🧙', '🧙‍♀️', '🧟',
+  '🧛', '🤖', '💀', '👽', '🛸', '👾', '🔥', '⚡', '🐲', '🐉',
+  '🐅', '🦅', '🐺', '🦍', '⚔️', '🛡️', '👑', '💎', '🎯', '🚀'
+];
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ matchesPlayed: 0, wins: 0, ratingChange: '+0', winStreak: 0 });
-  const [progress, setProgress] = useState({ totalSolved: 0, byTopic: [] });
-  const [loading, setLoading] = useState(true);
+  const [avatarEmoji, setAvatarEmoji] = useState(user?.avatarEmoji || '👤');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        const [statsRes, progressRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/users/stats', config),
-          axios.get('http://localhost:5000/api/practice/progress', config),
-        ]);
-        setStats(statsRes.data);
-        setProgress(progressRes.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [user.token]);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setMessage('');
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      const { data } = await axios.put('http://localhost:5000/api/users/profile', { avatarEmoji }, config);
+      updateUser({ ...user, avatarEmoji: data.avatarEmoji });
+      setMessage('Warrior profile updated successfully!');
+      setTimeout(() => setShowEmojiPicker(false), 1500);
+    } catch (err) {
+      setMessage('Failed to update profile protocol.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  const joinDate = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-    : 'N/A';
+  if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-gray-100 font-sans">
-      {/* Header */}
-      <header className="bg-[#111827] border-b border-gray-800 px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-white"
-          >
+    <div className="min-h-screen bg-[#0b0e14] text-white flex flex-col font-sans selection:bg-cyan-500/30">
+      <div className="scanline"></div>
+
+      <header className="h-24 px-10 flex items-center justify-between z-50 bg-[#0b0e14]/80 backdrop-blur-md border-b border-white/5">
+        <div className="flex items-center space-x-6">
+          <button onClick={() => navigate('/')} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-bold text-white">My Profile</h1>
+          <div className="flex flex-col">
+            <div className="flex items-center space-x-3">
+              <Shield size={24} className="text-cyan-500" />
+              <h1 className="text-3xl font-black italic tracking-tighter uppercase">WARRIOR <span className="text-cyan-500">PROFILE</span></h1>
+            </div>
+            <p className="text-[8px] font-bold tracking-[0.4em] text-gray-500 uppercase mt-1 ml-1">Secure Identity Node</p>
+          </div>
         </div>
-        <button
-          onClick={logout}
-          className="px-4 py-2 text-sm text-red-400 hover:text-white hover:bg-red-900/30 rounded-lg transition-colors"
-        >
-          Sign Out
-        </button>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-        {/* Profile Hero */}
-        <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-3xl p-8 flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-8">
-          <div className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-2xl shadow-purple-900/50 text-4xl font-extrabold text-white shrink-0">
-            {user.username.charAt(0).toUpperCase()}
-          </div>
-          <div className="text-center sm:text-left">
-            <h2 className="text-3xl font-extrabold text-white">{user.username}</h2>
-            <p className="text-gray-400 mt-1">{user.email}</p>
-            <div className="flex items-center justify-center sm:justify-start space-x-4 mt-3">
-              <span className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 text-sm font-bold">
-                {user.rating || 1200} ELO
-              </span>
-              <span className="text-gray-500 text-sm">Joined {joinDate}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Arena Stats */}
-        <div>
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-            <Trophy size={18} className="mr-2 text-yellow-400" /> Arena Stats
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Matches Played', value: stats.matchesPlayed, icon: <Activity size={18} className="text-blue-400" /> },
-              { label: 'Victories', value: stats.wins, icon: <Trophy size={18} className="text-yellow-400" /> },
-              { label: 'Rating Change', value: stats.ratingChange, icon: <Target size={18} className="text-green-400" />, green: true },
-              { label: 'Win Streak', value: `${stats.winStreak}`, icon: <Flame size={18} className="text-orange-400" /> },
-            ].map((s) => (
-              <div key={s.label} className="bg-[#111827] border border-gray-800 rounded-2xl p-5">
-                <div className="flex items-center space-x-2 text-gray-400 mb-2">
-                  {s.icon}
-                  <span className="text-xs font-medium">{s.label}</span>
-                </div>
-                <p className={`text-2xl font-extrabold ${s.green ? 'text-green-400' : 'text-white'}`}>{s.value}</p>
+      <main className="max-w-4xl mx-auto px-6 py-12 w-full space-y-10 z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* Avatar Section */}
+          <div className="flex flex-col items-center">
+            <div className="relative group">
+              <div className="w-56 h-56 bg-gradient-to-br from-cyan-500/20 to-pink-500/20 rounded-[3rem] flex items-center justify-center text-[100px] shadow-2xl border border-white/10 group-hover:border-cyan-500/30 transition-all duration-500">
+                {avatarEmoji}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Practice Progress */}
-        <div>
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-            <BookOpen size={18} className="mr-2 text-purple-400" /> Practice Progress
-            <span className="ml-3 px-3 py-0.5 bg-purple-500/10 border border-purple-500/30 rounded-full text-purple-400 text-xs font-bold">
-              {progress.totalSolved} solved
-            </span>
-          </h3>
-
-          {loading ? (
-            <div className="text-gray-500 text-sm">Loading...</div>
-          ) : progress.byTopic.length === 0 ? (
-            <div className="bg-[#111827] border border-gray-800 rounded-2xl p-8 text-center">
-              <BookOpen size={40} className="mx-auto text-gray-700 mb-3" />
-              <p className="text-gray-500">No practice sessions yet.</p>
-              <button
-                onClick={() => navigate('/practice')}
-                className="mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-xl transition-colors"
+              <div className="absolute -inset-4 bg-gradient-to-tr from-cyan-500 via-transparent to-pink-500 rounded-[3.5rem] opacity-20 group-hover:opacity-40 transition-opacity"></div>
+              
+              <button 
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="absolute -bottom-4 -right-4 w-16 h-16 bg-white text-black rounded-2xl flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all"
               >
-                Start Practicing
+                <Camera size={24} />
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {progress.byTopic.map((t) => (
-                <div key={t._id} className="bg-[#111827] border border-gray-800 rounded-2xl p-5 flex items-center justify-between hover:border-gray-700 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle2 size={18} className="text-green-500 shrink-0" />
-                    <div>
-                      <p className="font-semibold text-white text-sm">{TOPIC_LABELS[t._id] || t._id}</p>
-                      <p className="text-xs text-gray-500">
-                        Last: {new Date(t.lastSolved).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-extrabold text-purple-400">{t.count}</span>
-                </div>
-              ))}
+
+            <div className="mt-12 w-full space-y-4">
+               <div className="brawl-card p-6 border-cyan-500/20">
+                 <div className="flex items-center space-x-3 mb-2">
+                   <Target size={16} className="text-cyan-500" />
+                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Global Standing</span>
+                 </div>
+                 <p className="text-3xl font-black italic text-white">{user?.rating || 1200} <span className="text-xs text-gray-600 ml-1">ELO</span></p>
+               </div>
+               
+               <div className="brawl-card p-6 border-pink-500/20">
+                 <div className="flex items-center space-x-3 mb-2">
+                   <Zap size={16} className="text-pink-500" />
+                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Combat Streak</span>
+                 </div>
+                 <p className="text-3xl font-black italic text-white">08 <span className="text-xs text-gray-600 ml-1">WINS</span></p>
+               </div>
             </div>
-          )}
+          </div>
+
+          {/* Details Section */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="brawl-card p-10 space-y-8">
+              <div className="flex items-center space-x-3 mb-2">
+                <Terminal size={18} className="text-cyan-500" />
+                <h3 className="text-xs font-black uppercase tracking-widest italic">Identity Parameters</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="group">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Warrior Alias</p>
+                  <div className="relative">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                    <input
+                      disabled
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold tracking-widest text-gray-400 uppercase opacity-60"
+                      value={user?.username || ''}
+                    />
+                  </div>
+                </div>
+
+                <div className="group">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Neural Address</p>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                    <input
+                      disabled
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold tracking-widest text-gray-400 uppercase opacity-60"
+                      value={user?.email || ''}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {showEmojiPicker && (
+                <div className="pt-8 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">Select Battle Visual</p>
+                  <div className="grid grid-cols-6 sm:grid-cols-10 gap-3">
+                    {EMOJI_LIST.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => setAvatarEmoji(emoji)}
+                        className={`w-12 h-12 flex items-center justify-center text-2xl rounded-xl border transition-all ${avatarEmoji === emoji ? 'bg-cyan-500/20 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-white/5 border-white/10 hover:border-white/30'}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-10 flex items-center justify-between">
+                    <p className={`text-xs font-bold uppercase tracking-widest ${message.includes('success') ? 'text-green-500' : 'text-red-400'}`}>
+                      {message}
+                    </p>
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="px-10 py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black uppercase tracking-[0.2em] italic rounded-2xl shadow-[0_0_30px_rgba(6,182,212,0.2)] transition-all flex items-center space-x-3 disabled:opacity-50"
+                    >
+                      {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                      <span>Update Protocol</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="brawl-card p-10">
+               <div className="flex items-center space-x-3 mb-8">
+                <Trophy size={18} className="text-yellow-500" />
+                <h3 className="text-xs font-black uppercase tracking-widest italic">Achievements Secured</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-6">
+                {[
+                  { label: 'First Blood', desc: 'Won a brawl', icon: '⚔️' },
+                  { label: 'Neural Link', desc: 'Sync complete', icon: '🧠' },
+                  { label: 'Overload', desc: 'Hard challenge', icon: '⚡' },
+                ].map((ach, idx) => (
+                  <div key={idx} className="flex flex-col items-center text-center p-4 bg-white/5 rounded-2xl border border-white/5 group hover:border-yellow-500/30 transition-all">
+                    <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">{ach.icon}</span>
+                    <p className="text-[10px] font-black uppercase text-white mb-1">{ach.label}</p>
+                    <p className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter">{ach.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
         </div>
-      </div>
+      </main>
     </div>
   );
 };

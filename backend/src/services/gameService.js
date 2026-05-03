@@ -146,8 +146,22 @@ class GameService {
     if (!state || state.status !== 'in_round') return null;
 
     state.status = 'round_end';
+    
+    // Add player info to solvedUsers for the frontend
+    const results = {
+      ...state,
+      solvedUsers: state.solvedUsers.map(solve => {
+        const player = state.players.find(p => p.userId === solve.userId);
+        return {
+          ...solve,
+          username: player?.username || 'Unknown',
+          avatarEmoji: player?.avatarEmoji || '👤'
+        };
+      })
+    };
+
     await this.saveGameState(roomId, state);
-    return state;
+    return results;
   }
 
   async nextRound(roomId) {

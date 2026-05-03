@@ -57,7 +57,7 @@ const generatePracticeProblem = async (req, res) => {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-flash-latest',
+      model: 'gemini-pro',
       generationConfig: { responseMimeType: 'application/json' }
     });
 
@@ -94,8 +94,9 @@ Return a JSON object with this schema:
 
 Rules:
 1. Exactly 2 examples, exactly 5 testCases.
-2. DO NOT include the solution logic in the boilerplateCode. Provide only the input reading logic and placeholders (e.g., // Write your logic here).
-3. For Java, use public class Main.
+2. CRITICAL: DO NOT include the solution logic or any solved code in the boilerplateCode.
+3. Provide the COMPLETE boilerplate including necessary imports, the target function signature, and the Main method/block that reads from stdin and prints the result.
+4. For Java, use public class Main.
 `;
 
     const result = await model.generateContent(prompt);
@@ -178,4 +179,24 @@ const getProgress = async (req, res) => {
   }
 };
 
-module.exports = { getTopics, generatePracticeProblem, completeProblem, getProgress, getDoneIds };
+// GET /api/practice/problems/:topicId — returns all problems for a topic
+const getProblemsByTopic = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const problems = await Problem.find({ topic: topicId })
+      .select('title difficulty _id topic')
+      .sort({ difficulty: 1 }); // easy first
+    res.json(problems);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { 
+  getTopics, 
+  generatePracticeProblem, 
+  completeProblem, 
+  getProgress, 
+  getDoneIds,
+  getProblemsByTopic
+};

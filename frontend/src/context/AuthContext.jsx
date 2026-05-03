@@ -10,11 +10,17 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userInfo = localStorage.getItem('userInfo');
-    if (userInfo) {
-      setUser(JSON.parse(userInfo));
+    try {
+      const userInfo = localStorage.getItem('userInfo');
+      if (userInfo && userInfo !== 'undefined') {
+        setUser(JSON.parse(userInfo));
+      }
+    } catch (err) {
+      console.error('Auth sync failed:', err);
+      localStorage.removeItem('userInfo');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
@@ -28,9 +34,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (username, email, password) => {
+  const register = async (username, email, password, avatarEmoji) => {
     try {
-      const { data } = await axios.post('http://localhost:5000/api/auth/register', { username, email, password });
+      const { data } = await axios.post('http://localhost:5000/api/auth/register', { 
+        username, email, password, avatarEmoji 
+      });
       setUser(data);
       localStorage.setItem('userInfo', JSON.stringify(data));
       return { success: true };
@@ -44,8 +52,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('userInfo');
   };
 
+  const updateUser = (data) => {
+    setUser(prev => {
+      const updatedUser = { ...prev, ...data };
+      localStorage.setItem('userInfo', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

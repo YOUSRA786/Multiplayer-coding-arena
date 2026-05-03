@@ -5,14 +5,14 @@ import axios from 'axios';
 import Editor from '@monaco-editor/react';
 import {
   Play, ArrowLeft, CheckCircle2, XCircle, Loader2,
-  Trophy, RefreshCw, BookOpen
+  Trophy, RefreshCw, BookOpen, Sword, Terminal, Target
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const DIFF_COLORS = {
-  easy:   'bg-green-500/10 text-green-400 border-green-500/20',
-  medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  hard:   'bg-red-500/10 text-red-400 border-red-500/20',
+  easy:   'bg-green-500/10 text-green-400 border border-green-500/20',
+  medium: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+  hard:   'bg-red-500/10 text-red-400 border border-red-500/20',
 };
 
 const PracticeProblem = () => {
@@ -31,7 +31,6 @@ const PracticeProblem = () => {
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isMarkingDone, setIsMarkingDone] = useState(false);
   const resultsRef = useRef(null);
 
   useEffect(() => {
@@ -40,13 +39,15 @@ const PracticeProblem = () => {
     }
   }, [output]);
 
+  if (!user) return null;
+
   if (!problem) {
     return (
-      <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center text-white">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">No problem loaded.</p>
-          <button onClick={() => navigate('/practice')} className="px-4 py-2 bg-purple-600 rounded-lg">
-            Back to Practice
+          <p className="text-gray-500 mb-8 italic uppercase tracking-widest">Protocol Buffer Empty</p>
+          <button onClick={() => navigate('/practice')} className="px-8 py-4 bg-purple-600 rounded-2xl font-black uppercase tracking-widest italic shadow-lg">
+            Return to Archives
           </button>
         </div>
       </div>
@@ -76,7 +77,8 @@ const PracticeProblem = () => {
       setOutput({ result: allPassed ? 'Accepted' : 'Wrong Answer', passedCount: passed, totalCount: total, details: results });
 
       if (allPassed && !isCompleted) {
-        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        setIsCompleted(true);
       }
     } catch (err) {
       setOutput({
@@ -90,176 +92,148 @@ const PracticeProblem = () => {
     }
   };
 
-  const handleMarkDone = async () => {
-    if (isCompleted) return;
-    setIsMarkingDone(true);
-    try {
-      const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      await axios.post('http://localhost:5000/api/practice/complete', { 
-        problemSlug: problem._id, 
-        topic: topic.id,
-        title: problem.title
-      }, config);
-      setIsCompleted(true);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsMarkingDone(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-[#0b0f19] text-gray-100 font-sans">
+    <div className="flex flex-col h-screen bg-[#0b0e14] text-white font-sans selection:bg-cyan-500/30">
+      <div className="scanline"></div>
+
       {/* Header */}
-      <header className="h-14 bg-[#111827] border-b border-gray-800 flex items-center justify-between px-5 shrink-0">
-        <div className="flex items-center space-x-3">
-          <button onClick={() => navigate('/practice')} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft size={18} />
+      <header className="h-20 bg-[#0b0e14]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8 shrink-0 z-10">
+        <div className="flex items-center space-x-6">
+          <button onClick={() => navigate('/practice')} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all">
+            <ArrowLeft size={20} />
           </button>
-          <BookOpen size={18} className="text-purple-400" />
-          <span className="text-sm font-semibold text-gray-300">{topic.label} Practice</span>
-          <span className="text-gray-600">›</span>
-          <span className="text-sm font-bold text-white truncate max-w-[200px]">{problem.title}</span>
+          <div className="flex items-center space-x-4">
+            <div className="p-2 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+              <BookOpen size={20} className="text-purple-400" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">{topic.label} Archive</span>
+              <span className="text-xl font-black text-white italic uppercase tracking-tighter truncate max-w-[300px]">{problem.title}</span>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <span className={`px-2 py-0.5 text-xs font-bold uppercase rounded border ${DIFF_COLORS[problem.difficulty]}`}>
+        <div className="flex items-center space-x-6">
+          <span className={`px-3 py-1 text-[10px] font-black uppercase rounded italic border ${DIFF_COLORS[problem.difficulty]}`}>
             {problem.difficulty}
           </span>
-          <select
-            value={language}
-            onChange={(e) => handleLanguageChange(e.target.value)}
-            className="bg-gray-800 text-gray-200 border border-gray-700 rounded-md px-3 py-1 text-sm focus:outline-none"
-          >
-            <option value="python">Python</option>
-            <option value="cpp">C++</option>
-            <option value="java">Java</option>
-          </select>
-          <button
-            onClick={handleRun}
-            disabled={isRunning}
-            className="flex items-center px-4 py-1.5 rounded-md text-sm font-bold bg-green-600 hover:bg-green-500 text-white transition-colors disabled:opacity-50"
-          >
-            {isRunning ? <Loader2 size={14} className="animate-spin mr-2" /> : <Play size={14} className="mr-2" />}
-            Run
-          </button>
+          <div className="h-8 w-[1px] bg-white/10 mx-2"></div>
+          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 bg-black/40 rounded-xl p-1 border border-white/5 mx-2">
+            {['python', 'cpp', 'java'].map((lang) => (
+              <button
+                key={lang}
+                onClick={() => handleLanguageChange(lang)}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${language === lang ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                {lang === 'cpp' ? 'C++' : lang === 'java' ? 'Java' : 'Python'}
+              </button>
+            ))}
+          </div>
+            <button
+              onClick={handleRun}
+              disabled={isRunning}
+              className="flex items-center px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest italic bg-gradient-to-r from-cyan-600 to-blue-700 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50"
+            >
+              {isRunning ? <Loader2 size={16} className="animate-spin mr-3" /> : <Play size={16} className="mr-3" />}
+              Execute Protocol
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Problem */}
-        <div className="w-[420px] border-r border-gray-800 bg-[#111827] flex flex-col overflow-y-auto shrink-0">
-          <div className="p-6">
-            <h2 className="text-2xl font-extrabold text-white mb-4">{problem.title}</h2>
-            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line mb-6">{problem.description}</p>
-
-            {problem.examples?.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Examples</h3>
-                {problem.examples.map((ex, i) => (
-                  <div key={i} className="bg-[#1f2937] border border-gray-700 rounded-xl p-4 font-mono text-sm mb-3">
-                    <p><span className="text-blue-400">Input:</span> <span className="text-gray-300">{ex.input}</span></p>
-                    <p><span className="text-green-400">Output:</span> <span className="text-gray-300">{ex.output}</span></p>
-                    {ex.explanation && <p className="text-gray-500 text-xs mt-2">{ex.explanation}</p>}
+      <div className="flex flex-1 overflow-hidden p-8 space-x-8">
+        {/* Left: Problem Details */}
+        <div className="w-[450px] flex flex-col space-y-6 overflow-hidden">
+          <div className="brawl-card p-8 flex-1 flex flex-col overflow-hidden">
+            <div className="flex items-center space-x-3 mb-8">
+              <Target size={18} className="text-pink-500" />
+              <h3 className="text-xs font-black uppercase tracking-widest italic">Mission Parameters</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-4 text-gray-400 text-sm leading-relaxed mb-8 scrollbar-hide">
+              {problem.description}
+            </div>
+            
+            <div className="space-y-6">
+              {problem.examples?.map((ex, idx) => (
+                <div key={idx} className="brawl-card bg-black/40 border-white/5 p-6 font-mono text-xs space-y-4">
+                  <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-2 italic">Example Node #{idx + 1}</p>
+                  <div>
+                    <p className="text-gray-600 mb-1">// Input:</p>
+                    <p className="text-cyan-400 break-all">{ex.input}</p>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {problem.constraints?.length > 0 && (
-              <div className="bg-[#1f2937]/50 border border-gray-800 rounded-xl p-4 mb-8">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Constraints</h3>
-                <ul className="list-disc pl-4 text-gray-400 font-mono text-xs space-y-1">
-                  {problem.constraints.map((c, i) => <li key={i}>{c}</li>)}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Results */}
-          <div ref={resultsRef}>
-            {output && (
-              <div className="p-4 border-t border-gray-800">
-                <div className={`p-4 rounded-xl border mb-3 flex items-center justify-between ${output.result === 'Accepted' ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                  <div className="flex items-center space-x-2">
-                    {output.result === 'Accepted' ? <CheckCircle2 className="text-green-500" size={20} /> : <XCircle className="text-red-500" size={20} />}
-                    <span className={`font-bold ${output.result === 'Accepted' ? 'text-green-400' : 'text-red-400'}`}>{output.result}</span>
+                  <div>
+                    <p className="text-gray-600 mb-1">// Output:</p>
+                    <p className="text-green-400 break-all">{ex.output}</p>
                   </div>
-                  <span className="text-gray-400 font-mono text-sm">{output.passedCount}/{output.totalCount} Passed</span>
                 </div>
-
-                {output.result === 'Accepted' && (
-                  <button
-                    onClick={handleMarkDone}
-                    disabled={isCompleted || isMarkingDone}
-                    className={`w-full py-3 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all
-                      ${isCompleted
-                        ? 'bg-green-900/40 text-green-400 border border-green-700 cursor-default'
-                        : 'bg-purple-600 hover:bg-purple-500 text-white hover:scale-[1.02]'
-                      }`}
-                  >
-                    {isMarkingDone ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : isCompleted ? (
-                      <><CheckCircle2 size={16} /><span>Marked as Done! ✨</span></>
-                    ) : (
-                      <><Trophy size={16} /><span>Mark as Done</span></>
-                    )}
-                  </button>
-                )}
-
-                <div className="space-y-2 mt-3">
-                  {output.details?.map((d, i) => (
-                    <div key={i} className={`p-3 rounded-lg border text-xs font-mono ${d.passed ? 'bg-gray-800/50 border-gray-700' : 'bg-red-900/20 border-red-900/50'}`}>
-                      <div className="flex justify-between text-gray-400 mb-1">
-                        <span>Test {i + 1}</span>
-                        <span className={d.passed ? 'text-green-500' : 'text-red-500'}>{d.passed ? 'Passed' : 'Failed'}</span>
-                      </div>
-                      {!d.passed && (
-                        <div className="space-y-0.5">
-                          {d.input && <p><span className="text-gray-500">Input:</span> {d.input}</p>}
-                          {d.expectedOutput && <p><span className="text-green-500/70">Expected:</span> {d.expectedOutput}</p>}
-                          {d.actualOutput && <p><span className="text-red-500/70">Got:</span> {d.actualOutput}</p>}
-                          {d.error && <p className="text-yellow-400 mt-1">{d.error}</p>}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => navigate('/practice')}
-                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white flex items-center justify-center space-x-2 hover:bg-gray-800 transition-colors"
-                >
-                  <RefreshCw size={14} />
-                  <span>Try Another Topic</span>
-                </button>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Right: Editor */}
-        <div className="flex-1 flex flex-col bg-[#0d1117]">
-          <div className="flex-1 py-2">
-            <Editor
-              height="100%"
-              language={language}
-              theme="vs-dark"
-              value={code}
-              onChange={(val) => setCode(val)}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                padding: { top: 16 },
-                scrollBeyondLastLine: false,
-                smoothScrolling: true,
-                cursorBlinking: 'smooth',
-                cursorSmoothCaretAnimation: 'on',
-              }}
-            />
+        {/* Right: Editor & Results */}
+        <div className="flex-1 flex flex-col space-y-6 overflow-hidden">
+          <div className="flex-1 flex flex-col brawl-card overflow-hidden">
+            <div className="h-14 bg-white/5 border-b border-white/5 flex items-center px-8">
+              <div className="flex space-x-2 mr-6">
+                <div className="w-3 h-3 bg-red-500/50 rounded-full"></div>
+                <div className="w-3 h-3 bg-yellow-500/50 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500/5 rounded-full border border-green-500/20"></div>
+              </div>
+              <Terminal size={14} className="text-gray-500 mr-2" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 italic">Neural_Buffer.js</span>
+            </div>
+            <div className="flex-1 py-4">
+               <Editor 
+                height="100%" 
+                language={language} 
+                theme="vs-dark" 
+                value={code} 
+                onChange={(val) => setCode(val)} 
+                options={{ 
+                  minimap: { enabled: false }, 
+                  fontSize: 16,
+                  padding: { top: 20 },
+                  backgroundColor: '#0d111700'
+                }} 
+              />
+            </div>
           </div>
+
+          {/* Results Bar */}
+          {output && (
+            <div ref={resultsRef} className={`brawl-card p-8 animate-in slide-in-from-bottom-4 duration-500 ${output.result === 'Accepted' ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${output.result === 'Accepted' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                     {output.result === 'Accepted' ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
+                   </div>
+                   <div>
+                     <h4 className="text-2xl font-black italic uppercase tracking-tighter">{output.result}</h4>
+                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Verification: {output.passedCount}/{output.totalCount} Test Nodes Secure</p>
+                   </div>
+                </div>
+                {output.result === 'Accepted' && (
+                  <div className="px-6 py-2 bg-green-500/10 border border-green-500/30 rounded-full flex items-center space-x-3">
+                    <Trophy size={14} className="text-yellow-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-green-500">Archive Uploaded</span>
+                  </div>
+                )}
+              </div>
+              
+              {output.details && (
+                <div className="grid grid-cols-5 gap-4">
+                  {output.details.map((d, i) => (
+                    <div key={i} className={`p-4 rounded-xl border font-mono text-[10px] flex flex-col items-center justify-center space-y-2 transition-all hover:scale-105 ${d.passed ? 'bg-green-500/5 border-green-500/20 text-green-400' : 'bg-red-500/5 border-red-500/20 text-red-400'}`}>
+                       <span className="font-black uppercase opacity-40">Test #{i+1}</span>
+                       <span className="font-black">{d.passed ? 'SECURE' : 'BREACH'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

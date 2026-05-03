@@ -9,7 +9,7 @@ const generateToken = (id) => {
 
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, avatarEmoji } = req.body;
 
     const userExists = await User.findOne({ $or: [{ email }, { username }] });
 
@@ -21,6 +21,7 @@ const registerUser = async (req, res) => {
       username,
       email,
       password,
+      avatarEmoji
     });
 
     if (user) {
@@ -29,6 +30,7 @@ const registerUser = async (req, res) => {
         username: user.username,
         email: user.email,
         rating: user.rating,
+        avatarEmoji: user.avatarEmoji,
         token: generateToken(user._id),
       });
     } else {
@@ -51,6 +53,7 @@ const loginUser = async (req, res) => {
         username: user.username,
         email: user.email,
         rating: user.rating,
+        avatarEmoji: user.avatarEmoji,
         token: generateToken(user._id),
       });
     } else {

@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Submission = require('../models/Submission');
 const Room = require('../models/Room');
@@ -5,7 +6,7 @@ const Problem = require('../models/Problem');
 
 const getLeaderboard = async (req, res) => {
   try {
-    const users = await User.find().sort({ rating: -1 }).limit(10).select('username rating');
+    const users = await User.find().sort({ rating: -1 }).limit(10).select('username rating avatarEmoji');
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -99,4 +100,31 @@ const getHistory = async (req, res) => {
   }
 };
 
-module.exports = { getLeaderboard, getStats, getHistory };
+const updateProfile = async (req, res) => {
+  try {
+    const { avatarEmoji } = req.body;
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.avatarEmoji = avatarEmoji || user.avatarEmoji;
+      const updatedUser = await user.save();
+      const token = jwt.sign({ id: updatedUser._id.toString() }, process.env.JWT_SECRET, {
+        expiresIn: '30d',
+      });
+      res.json({
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        avatarEmoji: updatedUser.avatarEmoji,
+        rating: updatedUser.rating,
+        token
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getLeaderboard, getStats, getHistory, updateProfile };

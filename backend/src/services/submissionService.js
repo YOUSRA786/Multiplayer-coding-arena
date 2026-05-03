@@ -33,16 +33,10 @@ const handleSubmission = async ({
   // Execute Code
   console.log(`Executing code for user ${userId} in room ${roomId}...`);
   
-  // LeetCode style: Join user code with hidden test harness if available
-  let codeToExecute = code;
-  if (problem.testHarness && problem.testHarness[language]) {
-    codeToExecute = code + "\n\n" + problem.testHarness[language];
-  }
-
   let data;
   try {
     const res = await axios.post("http://localhost:5001/execute", {
-      code: codeToExecute,
+      code,
       language,
       testCases: problem.testCases
     });

@@ -1,7 +1,7 @@
 const { roomParticipants } = require('./state');
 
 module.exports = (io, socket) => {
-  socket.on('join_room', ({ roomId, userId, username }) => {
+  socket.on('join_room', ({ roomId, userId, username, avatarEmoji }) => {
     socket.join(roomId);
 
     if (!roomParticipants[roomId]) {
@@ -16,10 +16,12 @@ module.exports = (io, socket) => {
       roomParticipants[roomId].push({
         userId,
         username,
-        socketId: socket.id
+        socketId: socket.id,
+        avatarEmoji
       });
     } else {
       exists.socketId = socket.id;
+      exists.avatarEmoji = avatarEmoji;
     }
 
     io.to(roomId).emit('user_joined', { userId, username });

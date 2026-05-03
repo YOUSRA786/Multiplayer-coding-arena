@@ -1,13 +1,13 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const generateRandomProblem = async (excludeTitles = []) => {
+const generateRandomProblem = async (excludeTitles = [], topic = null, difficulty = null) => {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY is not configured');
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ 
-    model: 'gemini-1.5-flash',
+    model: 'gemini-pro',
     generationConfig: { responseMimeType: 'application/json' }
   });
 
@@ -15,9 +15,12 @@ const generateRandomProblem = async (excludeTitles = []) => {
     ? `IMPORTANT: DO NOT generate any of the following problems: ${excludeTitles.join(', ')}. Create something entirely different.`
     : '';
 
+  const topicPrompt = topic ? `specifically about the topic: "${topic}"` : 'suitable for a competitive programming arena';
+  const diffPrompt = difficulty ? `with difficulty: "${difficulty}"` : 'of random difficulty (easy, medium, or hard)';
+
   const prompt = `
-Generate a random, unique coding interview problem suitable for a competitive programming arena.
-It should be of random difficulty (easy, medium, or hard).
+Generate a random, unique coding interview problem ${topicPrompt}.
+It should be ${diffPrompt}.
 ${exclusionPrompt}
 
 Return a JSON object with this schema:
@@ -34,14 +37,9 @@ Return a JSON object with this schema:
   ],
   "constraints": ["String"],
   "boilerplateCode": {
-    "python": "String - JUST the function signature and a comment",
-    "cpp": "String - JUST the function signature",
-    "java": "String - JUST the method signature inside a public class Solution"
-  },
-  "testHarness": {
-    "python": "String - Code to read stdin and call the user's function",
-    "cpp": "String - Main function to read stdin and call the user's function",
-    "java": "String - Main class to read stdin and call the Solution class's method"
+    "python": "String - Function signature + Main block to read stdin",
+    "cpp": "String - Class/Function + Main function to read stdin",
+    "java": "String - Solution class + Main class to read stdin"
   },
   "testCases": [
     {
@@ -53,9 +51,13 @@ Return a JSON object with this schema:
 
 Important Rules:
 1. Generate exactly 3 examples and exactly 5 testCases.
-2. CRITICAL: THE boilerplateCode MUST ONLY contain the function skeleton that the user needs to fill in. 
-3. THE testHarness MUST contain the hidden code that reads from stdin, calls the user's function, and prints the result to stdout.
-4. For Java, the boilerplateCode should be a class named 'Solution', and the testHarness should be a class named 'Main' that interacts with 'Solution'.
+2. CRITICAL: DO NOT include any solution logic or solved code in the boilerplateCode. 
+3. Provide the FULL boilerplate including:
+   - Function signature (where the user implements the logic).
+   - Necessary imports.
+   - The COMPLETE Main body that reads input from stdin, calls the function, and prints the result.
+4. The Main body must handle the specific input format of your testCases.
+5. For Java, include both the Solution class and the public class Main in the same boilerplate.
 `;
 
   try {
