@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { EXECUTE_URL } from '../config';
 import Editor from '@monaco-editor/react';
 import {
   Play, ArrowLeft, CheckCircle2, XCircle, Loader2,
@@ -63,7 +64,7 @@ const PracticeProblem = () => {
     setIsRunning(true);
     setOutput(null);
     try {
-      const res = await axios.post('http://localhost:5001/execute', {
+      const res = await axios.post(`${EXECUTE_URL}/execute`, {
         code,
         language,
         testCases: problem.testCases,

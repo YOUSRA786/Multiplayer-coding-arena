@@ -55,7 +55,8 @@ const executeCode = async (language, code, testCases) => {
     const inputPath = path.join(jobDir, 'input.txt');
     fs.writeFileSync(inputPath, testCase.input);
 
-    const dockerCmd = `docker run --rm -v "${jobDir}:/app" -w /app -i ${config.image} sh -c "${config.command} < input.txt"`;
+    const hostJobDir = process.env.HOST_TEMP_DIR ? `${process.env.HOST_TEMP_DIR}/${jobId}` : jobDir;
+    const dockerCmd = `docker run --rm -v "${hostJobDir}:/app" -w /app -i ${config.image} sh -c "${config.command} < input.txt"`;
     
     try {
       const { stdout, stderr } = await execPromise(dockerCmd, { timeout: 10000 });

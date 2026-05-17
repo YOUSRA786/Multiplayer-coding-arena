@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import API_URL from '../config';
 import { 
   ArrowLeft, BookOpen, CheckCircle2, ExternalLink, 
   ChevronDown, ChevronUp, Sparkles, Loader2, Sword, 
@@ -197,8 +198,8 @@ const Practice = () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const [topicsRes, doneRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/practice/topics', config),
-        axios.get('http://localhost:5000/api/practice/done', config)
+        axios.get(`${API_URL}/api/practice/topics`, config),
+        axios.get(`${API_URL}/api/practice/done`, config)
       ]);
       setTopics(topicsRes.data);
       setDoneProblemIds(new Set(doneRes.data.map(d => d.problemSlug)));
@@ -226,7 +227,7 @@ const Practice = () => {
       setLoadingProblems(topicId);
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        const { data } = await axios.get(`http://localhost:5000/api/practice/problems/${topicId}`, config);
+        const { data } = await axios.get(`${API_URL}/api/practice/problems/${topicId}`, config);
         setTopicProblems(prev => ({ ...prev, [topicId]: data }));
       } catch (err) { console.error(err); }
       finally { setLoadingProblems(null); }
@@ -239,7 +240,7 @@ const Practice = () => {
     setGeneratingTopic(topic.id);
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const { data } = await axios.post('http://localhost:5000/api/practice/generate', { topic: topic.id }, config);
+      const { data } = await axios.post(`${API_URL}/api/practice/generate`, { topic: topic.id }, config);
       setTopicProblems(prev => ({
         ...prev,
         [topic.id]: [...(prev[topic.id] || []), data]
@@ -261,7 +262,7 @@ const Practice = () => {
     setMarkingId(problemId);
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      await axios.post('http://localhost:5000/api/practice/complete', {
+      await axios.post(`${API_URL}/api/practice/complete`, {
         problemSlug: problemId,
         topic: topic.id,
         title: problem.title,

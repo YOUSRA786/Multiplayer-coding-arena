@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
+import API_URL from '../config';
 import Editor from '@monaco-editor/react';
 import { 
   Play, Users, Trophy, MessageSquare, Code, List, Clock, 
@@ -36,7 +37,7 @@ const Room = () => {
 
   useEffect(() => {
     if (!user) return;
-    const newSocket = io('http://localhost:5000');
+    const newSocket = io(API_URL);
     setSocket(newSocket);
 
     newSocket.emit('join_room', { 

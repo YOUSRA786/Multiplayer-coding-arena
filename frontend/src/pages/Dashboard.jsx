@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import API_URL from '../config';
 import { 
   LogOut, Plus, Users, Trophy, Activity, Target, Flame, 
   ChevronDown, User as UserIcon, BookOpen, Sword, Zap, 
@@ -24,9 +25,9 @@ const Dashboard = () => {
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
         const [statsRes, lbRes, histRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/users/stats', config),
-          axios.get('http://localhost:5000/api/users/leaderboard'),
-          axios.get('http://localhost:5000/api/users/history', config)
+          axios.get(`${API_URL}/api/users/stats`, config),
+          axios.get(`${API_URL}/api/users/leaderboard`),
+          axios.get(`${API_URL}/api/users/history`, config)
         ]);
         setStats(statsRes.data);
         setLeaderboard(lbRes.data);
@@ -42,7 +43,7 @@ const Dashboard = () => {
     try {
       setIsCreating(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const { data } = await axios.post('http://localhost:5000/api/rooms', { useAi: true }, config);
+      const { data } = await axios.post(`${API_URL}/api/rooms`, { useAi: true }, config);
       navigate(`/room/${data.roomId}`);
     } catch (error) {
       console.error(error);

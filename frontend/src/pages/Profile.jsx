@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import API_URL from '../config';
 import { 
   ArrowLeft, Camera, Save, User as UserIcon, Mail, 
   Trophy, Activity, Shield, Zap, Sword, Target, Terminal, Loader2
@@ -26,7 +27,7 @@ const Profile = () => {
     setMessage('');
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const { data } = await axios.put('http://localhost:5000/api/users/profile', { avatarEmoji }, config);
+      const { data } = await axios.put(`${API_URL}/api/users/profile`, { avatarEmoji }, config);
       updateUser({ ...user, avatarEmoji: data.avatarEmoji });
       setMessage('Warrior profile updated successfully!');
       setTimeout(() => setShowEmojiPicker(false), 1500);

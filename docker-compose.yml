@@ -1,5 +1,7 @@
 version: '3.8'
+
 services:
+  # 1. MongoDB Database
   mongodb:
     image: mongo:latest
     container_name: mca-mongodb
@@ -11,7 +13,108 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password
       - MONGO_INITDB_DATABASE=codingarena
+    networks:
+      - mca-network
     restart: unless-stopped
+
+  # 2. Redis Cache & Message Queue Backend for BullMQ
+  redis:
+    image: redis:alpine
+    container_name: mca-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - mca-redis-data:/data
+    networks:
+      - mca-network
+    restart: unless-stopped
+
+  # 3. Main Backend Application & Socket Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mca-backend
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - EXECUTION_SERVICE_URL=${EXECUTION_SERVICE_URL}
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - mca-network
+    restart: unless-stopped
+
+  # 4. Asynchronous Background Queue Worker
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: mca-worker
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - EXECUTION_SERVICE_URL=${EXECUTION_SERVICE_URL}
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - mca-network
+    restart: unless-stopped
+
+  # 5. Sandbox Execution Microservice (Docker-out-of-Docker sibling container host)
+  execution-service:
+    build:
+      context: ./execution-service
+      dockerfile: Dockerfile
+    container_name: mca-execution-service
+    ports:
+      - "${EXECUTION_PORT:-5001}:5001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - mca-execution-temp:/usr/src/app/src/temp
+    environment:
+      - PORT=5001
+      - HOST_TEMP_DIR=${HOST_TEMP_DIR}
+      - NODE_ENV=production
+    networks:
+      - mca-network
+    restart: unless-stopped
+
+  # 6. High Performance Nginx Static Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_EXECUTE_URL=${VITE_EXECUTE_URL}
+    container_name: mca-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - mca-network
+    restart: unless-stopped
+
+networks:
+  mca-network:
+    driver: bridge
 
 volumes:
   mca-mongo-data:
+  mca-redis-data:
+  mca-execution-temp:

@@ -28,20 +28,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Standard Middleware (Must be before security middleware)
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',') 
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost', 'http://localhost:80'];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
-      return callback(null, true);
-    }
-    return callback(new Error('CORS Policy Breach: Origin not authorized by arena protocols.'), false);
-  },
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
 // Security Middleware
@@ -66,9 +53,8 @@ app.use(errorHandler);
 // Socket.io Setup
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins.includes('*') ? '*' : allowedOrigins,
+    origin: '*',
     methods: ['GET', 'POST'],
-    credentials: true
   },
 });
 
