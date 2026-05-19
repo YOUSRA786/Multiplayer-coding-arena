@@ -55,7 +55,7 @@ pipeline {
                         if (isUnix()) {
                             sh 'npm audit || true'
                         } else {
-                            bat 'npm audit || true'
+                            bat 'npm audit || exit 0'
                         }
                     }
                 }
@@ -64,7 +64,7 @@ pipeline {
                         if (isUnix()) {
                             sh 'npm audit || true'
                         } else {
-                            bat 'npm audit || true'
+                            bat 'npm audit || exit 0'
                         }
                     }
                 }
@@ -158,8 +158,8 @@ pipeline {
                     sh 'docker compose down || true'
                     sh 'docker compose up -d || true'
                 } else {
-                    bat 'docker compose down || true'
-                    bat 'docker compose up -d || true'
+                    bat 'docker compose down || exit 0'
+                    bat 'docker compose up -d || exit 0'
                 }
             }
         }
@@ -169,7 +169,7 @@ pipeline {
                 if (isUnix()) {
                     sh 'docker image prune -f || true'
                 } else {
-                    bat 'docker image prune -f || true'
+                    bat 'docker image prune -f || exit 0'
                 }
             }
         }
