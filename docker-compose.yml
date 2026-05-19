@@ -110,6 +110,20 @@ services:
       - mca-network
     restart: unless-stopped
 
+  # 7. Jenkins CI/CD Automation Controller
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: mca-jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - mca-jenkins-data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mca-network
+    restart: unless-stopped
+
 networks:
   mca-network:
     driver: bridge
@@ -118,3 +132,4 @@ volumes:
   mca-mongo-data:
   mca-redis-data:
   mca-execution-temp:
+  mca-jenkins-data:
