@@ -94,7 +94,6 @@ pipeline {
                         sh 'docker compose up -d mongodb redis backend worker execution-service frontend'
                     } else {
                         bat 'powershell -Command "try { $procId = (Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue).OwningProcess; if ($procId) { Stop-Process -Id $procId -Force; Write-Host \'Killed native process occupying port 5001\' } } catch {}"'
-                        bat 'powershell -Command "try { $procId = (Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue).OwningProcess; if ($procId) { Stop-Process -Id $procId -Force; Write-Host \'Killed native process occupying port 5000\' } } catch {}"'
                         bat 'docker rm -f mca-mongodb mca-redis mca-backend mca-worker mca-execution-service mca-frontend || exit 0'
                         bat 'docker compose down'
                         bat 'docker compose up -d mongodb redis backend worker execution-service frontend'
@@ -164,7 +163,6 @@ pipeline {
                     sh 'docker compose up -d mongodb redis backend worker execution-service frontend || true'
                 } else {
                     bat 'powershell -Command "try { $procId = (Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue).OwningProcess; if ($procId) { Stop-Process -Id $procId -Force } } catch {}"'
-                    bat 'powershell -Command "try { $procId = (Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue).OwningProcess; if ($procId) { Stop-Process -Id $procId -Force } } catch {}"'
                     bat 'docker rm -f mca-mongodb mca-redis mca-backend mca-worker mca-execution-service mca-frontend || exit 0'
                     bat 'docker compose down || exit 0'
                     bat 'docker compose up -d mongodb redis backend worker execution-service frontend || exit 0'
