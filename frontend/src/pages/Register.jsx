@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Sword, Shield, Lock, User, Mail, ChevronRight, 
-  ChevronLeft, Zap, Target, Sparkles, Check
+  ChevronLeft, Zap, Target, Sparkles, Check, Loader2, XCircle
 } from 'lucide-react';
 
 const EMOJI_LIST = [
