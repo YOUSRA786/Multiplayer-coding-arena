@@ -23,7 +23,15 @@ Execution Service
         ↓
 MongoDB Atlas
 ```
+### 🔒 Security Features
 
+- JWT-based Authentication
+- Secure API Handling
+- Helmet Middleware Integration
+- Rate Limiting
+- MongoDB Sanitization
+- Docker-based Isolated Code Execution
+- Environment Variable Protection
 ## ✨ Features
 
 * 🔐 JWT Authentication (Login / Signup)
