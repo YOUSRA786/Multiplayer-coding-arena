@@ -2,6 +2,25 @@
 
 A real-time competitive coding platform where users can create or join rooms, solve coding challenges simultaneously, and compete on live leaderboards with instant updates.
 
+#🚀 Project Planning
+
+The project is planned as a real-time multiplayer coding platform based on a microservices architecture. The system consists of independent services including frontend, backend, execution service, worker service, Redis queue management, and MongoDB database integration.
+
+The development process is divided into multiple phases including frontend development, backend API creation, real-time communication using Socket.io, secure code execution, Docker containerization, CI/CD pipeline implementation using Jenkins, and cloud deployment using AWS EC2, Vercel, and Render.
+
+##🏗️ Project Architecture
+Frontend (React + Vite)
+        ↓
+Backend API (Node.js + Express)
+        ↓
+Redis Queue (BullMQ)
+        ↓
+Worker Service
+        ↓
+Execution Service
+        ↓
+MongoDB Atlas
+
 ## ✨ Features
 
 * 🔐 JWT Authentication (Login / Signup)
