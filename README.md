@@ -4,9 +4,9 @@ A real-time competitive coding platform where users can create or join rooms, so
 
 ## 🚀 Project Planning
 
-The project is planned as a real-time multiplayer coding platform based on a microservices architecture. The system consists of independent services including frontend, backend, execution service, worker service, Redis queue management, and MongoDB database integration.
+The project is planned as a real-time multiplayer coding platform based on a microservices architecture. The development follows the Agile methodology, where the project is divided into multiple phases and modules for iterative development, testing, and deployment.
 
-The development process is divided into multiple phases including frontend development, backend API creation, real-time communication using Socket.io, secure code execution, Docker containerization, CI/CD pipeline implementation using Jenkins, and cloud deployment using AWS EC2, Vercel, and Render.
+The system consists of independent services including frontend, backend, execution service, worker service, Redis queue management, and MongoDB database integration. The project also implements DevOps practices such as Docker containerization, Jenkins CI/CD pipeline, and cloud deployment using AWS EC2, Vercel, and Render.
 
 ### 🏗️ Project Architecture
 
