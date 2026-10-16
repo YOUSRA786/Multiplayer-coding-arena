@@ -1,12 +1,6 @@
 const { Worker } = require("bullmq");
 const submissionService = require("../services/submissionService");
-const connectDB = require("../config/db");
-const dotenv = require("dotenv");
 
-dotenv.config();
-
-// Connect to MongoDB since worker needs DB access to query problem & save submission
-connectDB();
 
 const getRedisConnectionOptions = () => {
   let host = process.env.REDIS_HOST || "127.0.0.1";

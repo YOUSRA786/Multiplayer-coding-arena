@@ -96,6 +96,8 @@ const io = new Server(server, {
     credentials: true
   },
 });
+// Start the BullMQ submission worker
+require('./workers/submissionWorker');
 
 require('./sockets')(io);
 
