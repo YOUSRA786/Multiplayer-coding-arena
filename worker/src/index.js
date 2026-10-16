@@ -1,3 +1,4 @@
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -57,7 +58,8 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
   },
 });
-
+// Start the BullMQ submission worker in this backend process
+require('./workers/submissionWorker');
 require('./sockets')(io);
 
 const PORT = process.env.PORT || 5000;

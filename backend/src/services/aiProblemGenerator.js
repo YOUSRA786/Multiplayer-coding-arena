@@ -103,8 +103,9 @@ const generateRandomProblem = async (excludeTitles = [], topic = null, difficult
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  // Use gemini-1.5-flash: 15 req/min free tier vs gemini-2.5-flash's 5 req/min
   const model = genAI.getGenerativeModel({ 
-    model: 'gemini-2.5-flash',
+    model: 'gemini-1.5-flash',
     generationConfig: { 
       responseMimeType: 'application/json',
       responseSchema: schema
@@ -160,12 +161,15 @@ Important Rules:
 5. For Java, include both the Solution class and the public class Main in the same boilerplate.
 `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const raw = result.response.text();
-    const cleaned = cleanGeminiResponse(raw);
-
+  // Retry up to 2 times with backoff on rate limit errors
+  const MAX_RETRIES = 2;
+  let lastError;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      const result = await model.generateContent(prompt);
+      const raw = result.response.text();
+      const cleaned = cleanGeminiResponse(raw);
+
       const problemData = JSON.parse(cleaned);
       
       // Normalize difficulty to lowercase for MongoDB enum validation
@@ -178,14 +182,21 @@ Important Rules:
       }
 
       return problemData;
-    } catch (parseErr) {
-      console.error('Gemini JSON Parse Error. Cleaned response:', cleaned);
-      throw parseErr;
+    } catch (error) {
+      lastError = error;
+      const is429 = error?.message?.includes('429') || error?.message?.includes('quota');
+      const is503 = error?.message?.includes('503') || error?.message?.includes('high demand');
+      if ((is429 || is503) && attempt < MAX_RETRIES) {
+        const waitMs = (attempt + 1) * 5000; // 5s, 10s
+        console.warn(`Gemini rate limited (attempt ${attempt + 1}). Retrying in ${waitMs / 1000}s...`);
+        await new Promise(res => setTimeout(res, waitMs));
+        continue;
+      }
+      console.error('Gemini Generation Error:', error?.message || error);
+      throw new Error('Failed to generate problem with Gemini AI: ' + (error?.message || 'Unknown error'));
     }
-  } catch (error) {
-    console.error('Gemini Generation Error:', error?.message || error);
-    throw new Error('Failed to generate problem with Gemini AI: ' + (error?.message || 'Unknown error'));
   }
+  throw new Error('Failed to generate problem after retries: ' + (lastError?.message || 'Unknown error'));
 };
 
 module.exports = { generateRandomProblem };
