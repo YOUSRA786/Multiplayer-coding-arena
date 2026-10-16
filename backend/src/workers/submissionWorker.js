@@ -41,7 +41,13 @@ const worker = new Worker(
     connection: getRedisConnectionOptions()
   }
 );
+worker.on('ready', () => {
+  console.log('[Worker] Connected to Redis and ready for jobs');
+});
 
+worker.on('error', (err) => {
+  console.error('[Worker] Error:', err.message);
+});
 worker.on("completed", job => {
   console.log(`[Worker] Job ${job.id} completed successfully`);
 });
