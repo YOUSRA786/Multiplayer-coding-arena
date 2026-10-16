@@ -35,6 +35,11 @@ const Room = () => {
   const [timeLeft, setTimeLeft] = useState('01:14');
   const chatEndRef = useRef(null);
 
+  const languageRef = useRef(language);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+
   useEffect(() => {
     if (!user) return;
     const newSocket = io(API_URL);
@@ -62,7 +67,7 @@ const Room = () => {
       setRoundEndTime(data.endTime);
       setOutput(null);
       if (data.problem?.boilerplateCode) {
-        setCode(data.problem.boilerplateCode[language]);
+        setCode(data.problem.boilerplateCode[languageRef.current]);
       }
     });
 
@@ -89,13 +94,20 @@ const Room = () => {
       setOutput(data);
       setIsSubmitting(false);
     });
+    newSocket.on('submission_error', (data) => {
+      setOutput({
+        result: 'Error',
+        message: data?.message || 'Code submission failed.'
+      });
+      setIsSubmitting(false);
+    });
 
     newSocket.on('chat_message', (msg) => {
       setChatMessages((prev) => [...prev, msg]);
     });
 
     return () => newSocket.disconnect();
-  }, [roomId, user, language]);
+  }, [roomId, user]);
 
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -123,13 +135,47 @@ const Room = () => {
   };
 
   const handleSubmitCode = () => {
-    if (gameState !== 'in_round' || isSubmitting) return;
-    setIsSubmitting(true);
-    socket.emit('submit_code', {
-      roomId, userId: user._id, username: user.username,
-      problemId: problem._id, code, language
-    });
-  };
+  if (gameState !== 'in_round' || isSubmitting) return;
+
+  if (!socket?.connected) {
+    setOutput({ result: 'Error', message: 'Not connected to the game server.' });
+    return;
+  }
+
+  if (!problem?._id || !code.trim()) {
+    setOutput({ result: 'Error', message: 'Problem or code is missing.' });
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  socket.timeout(15000).emit(
+    'submit_code',
+    {
+      roomId,
+      userId: user._id,
+      username: user.username,
+      problemId: problem._id,
+      code,
+      language
+    },
+    (err, response) => {
+      if (err) {
+        setIsSubmitting(false);
+        setOutput({
+          result: 'Error',
+          message: 'Submission timed out. Check the backend logs.'
+        });
+        return;
+      }
+
+      if (response?.error) {
+        setIsSubmitting(false);
+        setOutput({ result: 'Error', message: response.error });
+      }
+    }
+  );
+};
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -402,6 +448,11 @@ const Room = () => {
                        </h4>
                        <span className="text-[10px] font-bold text-gray-500">{output.passedCount}/{output.totalCount} Test Nodes Secure</span>
                     </div>
+                    {output.message && (
+                        <p className="text-red-400 text-sm mt-2">
+                          {output.message}
+                        </p>
+                      )}
                     <div className="grid grid-cols-5 gap-2 mb-4">
                       {output.details?.map((test, idx) => (
                         <div 
